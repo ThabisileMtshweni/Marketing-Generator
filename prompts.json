@@ -1,0 +1,8 @@
+{
+  "product_description": "Write a {tone} description for {product} aimed at {audience}. {extra}",
+  "social_media_post": "Create a {tone} social media post for {product}. Target: {audience}. {extra}",
+  "ad_copy": "Generate a {tone} ad copy for {product}, targeting {audience}. {extra}",
+  "email_marketing": "Compose a {tone} marketing email for {product}. Audience: {audience}. {extra}",
+  "tagline": "Create a catchy and {tone} tagline for {product}. Audience: {audience}. {extra}"
+}
+

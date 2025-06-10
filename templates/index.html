@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Marketing Copy Generator</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>Marketing Copy Generator</h1>
+
+    <form method="POST">
+      <label for="prompt_type">Select Prompt Type:</label>
+      <select name="prompt_type" id="prompt_type" required>
+        <option value="">-- Choose one --</option>
+        <option value="product_description">Product Description</option>
+        <option value="social_media_post">Social Media Post</option>
+        <option value="ad_copy">Ad Copy</option>
+        <option value="email_marketing">Email Marketing</option>
+        <option value="tagline">Tagline</option>
+      </select>
+
+      <label for="tone">Tone:</label>
+      <input type="text" id="tone" name="tone" placeholder="e.g., playful, professional" required>
+
+      <label for="product">Product Name or Description:</label>
+      <input type="text" id="product" name="product" required>
+
+      <label for="audience">Target Audience:</label>
+      <input type="text" id="audience" name="audience" required>
+
+      <label for="extra">Extra Info:</label>
+      <textarea id="extra" name="extra" placeholder="e.g., launch date, discount, features..."></textarea>
+
+      <button type="submit">Generate</button>
+    </form>
+
+    {% if result %}
+      <h2>Generated Copy:</h2>
+      <div class="output-box">
+        <p>{{ result }}</p>
+      </div>
+      <p><small>Generated in {{ time }} seconds</small></p>
+    {% endif %}
+  </div>
+</body>
+</html>

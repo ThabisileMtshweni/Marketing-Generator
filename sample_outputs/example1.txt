@@ -1,0 +1,8 @@
+Output Type: Product Description
+Tone: Friendly
+Product: Eco-friendly Water Bottle
+Audience: Health-conscious millennials
+Feature: Keeps drinks cold for 24 hours, cuts plastic use
+
+Generated Output:
+Stay hydrated and save the planet with our sleek, eco-friendly water bottle! Designed for health-conscious millennials, it keeps your drinks cold for 24 hours and hot for 12 — all while helping reduce plastic waste. With a lightweight, leak-proof design and modern style, it’s the perfect companion for every adventure. 🌍💧
