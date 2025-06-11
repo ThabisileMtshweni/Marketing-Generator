@@ -1,19 +1,69 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, flash
+from flask_mail import Mail, Message
 import cohere
 import json
 import time
 import os
+from dotenv import load_dotenv
+import smtplib
+import socket
+
+# Load environment variables
+load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
 
-# Load Cohere API key
-COHERE_API_KEY = "YXTGgrimFknlWU4RDwfKjHYKuH2DD0pUnT6bu9EY"  # Replace this with your real Cohere API key
+# Configure Flask-Mail with more robust settings
+app.config.update(
+    MAIL_SERVER=os.getenv('MAIL_SERVER', 'smtp.gmail.com'),
+    MAIL_PORT=int(os.getenv('MAIL_PORT', 587)),
+    MAIL_USE_TLS=os.getenv('MAIL_USE_TLS', 'True') == 'True',
+    MAIL_USE_SSL=os.getenv('MAIL_USE_SSL', 'False') == 'True',
+    MAIL_USERNAME=os.getenv('MAIL_USERNAME'),
+    MAIL_PASSWORD=os.getenv('MAIL_PASSWORD'),
+    MAIL_DEFAULT_SENDER=os.getenv('MAIL_DEFAULT_SENDER'),
+    MAIL_TIMEOUT=30,  # Increased timeout
+    MAIL_DEBUG=True
+)
+
+mail = Mail(app)
+
+# Initialize Cohere client
+COHERE_API_KEY = os.getenv('COHERE_API_KEY', 'your-cohere-key')
 co = cohere.Client(COHERE_API_KEY)
 
 # Load prompt templates
 with open("prompts.json") as f:
     prompt_templates = json.load(f)
+
+def test_email_config():
+    """Test email configuration before starting server"""
+    with app.app_context():
+        try:
+            print("Testing email configuration...")
+            with mail.connect() as connection:
+                msg = Message(
+                    subject="Test Email from Marketing Generator",
+                    recipients=["test@example.com"],  # Replace with your test email
+                    body="This is a test email to verify configuration."
+                )
+                connection.send(msg)
+            print("✓ Email configuration is working!")
+            return True
+        except smtplib.SMTPAuthenticationError as e:
+            print(f"✗ Authentication failed: {e}")
+            print("Please verify your email username and password (app password for Gmail)")
+        except smtplib.SMTPServerDisconnected as e:
+            print(f"✗ Server disconnected: {e}")
+            print("Check your network connection and SMTP settings")
+        except socket.timeout as e:
+            print(f"✗ Connection timed out: {e}")
+            print("Try increasing MAIL_TIMEOUT or check your network")
+        except Exception as e:
+            print(f"✗ Unexpected error: {e}")
+        return False
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -26,6 +76,7 @@ def index():
         product = request.form.get("product")
         audience = request.form.get("audience")
         extra = request.form.get("extra")
+        email = request.form.get("email")
 
         # Choose prompt template
         prompt_template = prompt_templates.get(prompt_type, "")
@@ -35,21 +86,77 @@ def index():
 
         try:
             response = co.generate(
-                model="command",  # or "command-light" if you want a smaller model
+                model="command",
                 prompt=prompt,
                 max_tokens=150,
                 temperature=0.7
             )
             result = response.generations[0].text.strip()
+            
+            # Send email if provided
+            if email:
+                try:
+                    send_email(email, prompt_type, result)
+                    flash('Your generated copy has been sent to your email!', 'success')
+                except Exception as e:
+                    flash(f'Error sending email: {str(e)}', 'error')
+                    app.logger.error(f"Email error: {str(e)}")
+                    
         except Exception as e:
             result = f"Error: {str(e)}"
+            flash(f'Generation error: {str(e)}', 'error')
 
         end_time = time.time()
         elapsed = round(end_time - start_time, 2)
 
-        return render_template("index.html", result=result, time=elapsed)
+        return render_template("index.html", 
+                            result=result, 
+                            time=elapsed,
+                            form_data={
+                                'prompt_type': prompt_type,
+                                'tone': tone,
+                                'product': product,
+                                'audience': audience,
+                                'extra': extra,
+                                'email': email
+                            })
 
-    return render_template("index.html", result=None)
+    return render_template("index.html", result=None, form_data=None)
+
+def send_email(to_email, prompt_type, content):
+    """Enhanced email sending with better error handling"""
+    subject = f"Your Generated {prompt_type.replace('_', ' ').title()}"
+    body = f"""Here's the marketing copy you requested:
+
+{content}
+
+---
+Generated by Marketing Copy Generator
+"""
+    
+    try:
+        msg = Message(
+            subject,
+            recipients=[to_email],
+            body=body
+        )
+        
+        # Use separate connection to prevent timeouts
+        with mail.connect() as connection:
+            connection.send(msg)
+            
+    except smtplib.SMTPResponseException as e:
+        error_msg = f"SMTP Error {e.smtp_code}: {e.smtp_error}"
+        app.logger.error(error_msg)
+        raise Exception(error_msg)
+    except Exception as e:
+        app.logger.error(f"Email sending failed: {str(e)}")
+        raise
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Test email configuration before starting server
+    if test_email_config():
+        app.run(debug=True)
+    else:
+        print("Server not started due to email configuration issues")
+        print("Please check your .env file and email settings")

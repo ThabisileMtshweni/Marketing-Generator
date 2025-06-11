@@ -9,28 +9,45 @@
   <div class="container">
     <h1>Marketing Copy Generator</h1>
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
     <form method="POST">
       <label for="prompt_type">Select Prompt Type:</label>
       <select name="prompt_type" id="prompt_type" required>
         <option value="">-- Choose one --</option>
-        <option value="product_description">Product Description</option>
-        <option value="social_media_post">Social Media Post</option>
-        <option value="ad_copy">Ad Copy</option>
-        <option value="email_marketing">Email Marketing</option>
-        <option value="tagline">Tagline</option>
+        <option value="product_description" {% if form_data and form_data.prompt_type == 'product_description' %}selected{% endif %}>Product Description</option>
+        <option value="social_media_post" {% if form_data and form_data.prompt_type == 'social_media_post' %}selected{% endif %}>Social Media Post</option>
+        <option value="ad_copy" {% if form_data and form_data.prompt_type == 'ad_copy' %}selected{% endif %}>Ad Copy</option>
+        <option value="email_marketing" {% if form_data and form_data.prompt_type == 'email_marketing' %}selected{% endif %}>Email Marketing</option>
+        <option value="tagline" {% if form_data and form_data.prompt_type == 'tagline' %}selected{% endif %}>Tagline</option>
       </select>
 
       <label for="tone">Tone:</label>
-      <input type="text" id="tone" name="tone" placeholder="e.g., playful, professional" required>
+      <input type="text" id="tone" name="tone" placeholder="e.g., playful, professional" 
+             value="{% if form_data %}{{ form_data.tone }}{% endif %}" required>
 
       <label for="product">Product Name or Description:</label>
-      <input type="text" id="product" name="product" required>
+      <input type="text" id="product" name="product" 
+             value="{% if form_data %}{{ form_data.product }}{% endif %}" required>
 
       <label for="audience">Target Audience:</label>
-      <input type="text" id="audience" name="audience" required>
+      <input type="text" id="audience" name="audience" 
+             value="{% if form_data %}{{ form_data.audience }}{% endif %}" required>
 
       <label for="extra">Extra Info:</label>
-      <textarea id="extra" name="extra" placeholder="e.g., launch date, discount, features..."></textarea>
+      <textarea id="extra" name="extra" placeholder="e.g., launch date, discount, features...">{% if form_data %}{{ form_data.extra }}{% endif %}</textarea>
+
+      <label for="email">Email (optional - we'll send the results):</label>
+      <input type="email" id="email" name="email" 
+             value="{% if form_data %}{{ form_data.email }}{% endif %}" placeholder="your@email.com">
 
       <button type="submit">Generate</button>
     </form>
