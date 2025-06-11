@@ -4,11 +4,27 @@
   <meta charset="UTF-8">
   <title>Marketing Copy Generator</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <style>
+    .share-buttons {
+      margin-top: 15px;
+    }
+    .share-buttons button {
+      margin-right: 10px;
+    }
+    .output-box {
+      background: #f9f9f9;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      white-space: pre-wrap;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <h1>Marketing Copy Generator</h1>
 
+    <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
@@ -19,6 +35,7 @@
       {% endif %}
     {% endwith %}
 
+    <!-- Main form -->
     <form method="POST">
       <label for="prompt_type">Select Prompt Type:</label>
       <select name="prompt_type" id="prompt_type" required>
@@ -32,33 +49,75 @@
 
       <label for="tone">Tone:</label>
       <input type="text" id="tone" name="tone" placeholder="e.g., playful, professional" 
-             value="{% if form_data %}{{ form_data.tone }}{% endif %}" required>
+             value="{{ form_data.tone if form_data else '' }}" required>
 
       <label for="product">Product Name or Description:</label>
       <input type="text" id="product" name="product" 
-             value="{% if form_data %}{{ form_data.product }}{% endif %}" required>
+             value="{{ form_data.product if form_data else '' }}" required>
 
       <label for="audience">Target Audience:</label>
       <input type="text" id="audience" name="audience" 
-             value="{% if form_data %}{{ form_data.audience }}{% endif %}" required>
+             value="{{ form_data.audience if form_data else '' }}" required>
 
       <label for="extra">Extra Info:</label>
-      <textarea id="extra" name="extra" placeholder="e.g., launch date, discount, features...">{% if form_data %}{{ form_data.extra }}{% endif %}</textarea>
+      <textarea id="extra" name="extra" placeholder="e.g., launch date, discount, features...">{{ form_data.extra if form_data else '' }}</textarea>
 
       <label for="email">Email (optional - we'll send the results):</label>
       <input type="email" id="email" name="email" 
-             value="{% if form_data %}{{ form_data.email }}{% endif %}" placeholder="your@email.com">
+             value="{{ form_data.email if form_data else '' }}" placeholder="your@email.com">
 
       <button type="submit">Generate</button>
     </form>
 
     {% if result %}
-      <h2>Generated Copy:</h2>
-      <div class="output-box">
-        <p>{{ result }}</p>
-      </div>
-      <p><small>Generated in {{ time }} seconds</small></p>
+    <h2>Generated Copy:</h2>
+    <div class="output-box" id="resultText">{{ result }}</div>
+    <p><small>Generated in {{ time }} seconds</small></p>
+
+    {% if tokens %}
+    <div class="token-usage">
+      <strong>Token Usage:</strong><br>
+      Prompt tokens: {{ tokens.prompt_tokens }}<br>
+      Generated tokens: {{ tokens.generated_tokens }}<br>
+      Total tokens: {{ tokens.total_tokens }}
+    </div>
+    {% endif %}
+
+    <!-- Share Buttons -->
+    <div class="share-buttons">
+      <!-- Facebook -->
+      <a href="https://www.facebook.com/sharer/sharer.php?u=https://yourappdomain.com" target="_blank">
+        <button type="button">Share on Facebook</button>
+      </a>
+
+      <!-- Twitter -->
+      <a href="https://twitter.com/intent/tweet?text={{ result|urlencode }}" target="_blank">
+        <button type="button">Share on Twitter</button>
+      </a>
+
+      <!-- Copy to Clipboard -->
+
+      <button type="button" onclick="copyToClipboard()">Copy for Instagram</button>
+    </div>
+
+    <!-- PDF Download -->
+    <form action="/download" method="POST" style="margin-top: 10px;">
+      <input type="hidden" name="content" value="{{ result|e }}">
+      <button type="submit">Download as PDF</button>
+    </form>
     {% endif %}
   </div>
+
+  
+
+  <!-- Copy-to-Clipboard Script  -->
+  <script>
+    function copyToClipboard() {
+      const text = document.getElementById("resultText").innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Copied to clipboard. Paste into Instagram caption!");
+      });
+    }
+  </script> 
 </body>
 </html>
