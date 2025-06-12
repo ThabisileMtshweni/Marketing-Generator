@@ -1,15 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Marketing Copy Generator</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
   <style>
-    .share-buttons {
-      margin-top: 15px;
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f3f4f6;
+      color: #333;
     }
-    .share-buttons button {
-      margin-right: 10px;
+    .container {
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    h1 {
+      text-align: center;
+      color: #4f46e5;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      background-color: #4f46e5;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #4338ca;
     }
     .output-box {
       background: #f9f9f9;
@@ -17,6 +53,46 @@
       border: 1px solid #ccc;
       border-radius: 5px;
       white-space: pre-wrap;
+      margin-top: 20px;
+    }
+    .share-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .share-buttons button {
+      flex: 1;
+      min-width: 100px;
+    }
+    .token-usage, .dashboard {
+      margin-top: 20px;
+      font-size: 0.95rem;
+      background: #eef2ff;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .alert {
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+    }
+    .alert-success {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .alert-danger {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 15px;
+      }
+      .share-buttons {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -24,7 +100,7 @@
   <div class="container">
     <h1>Marketing Copy Generator</h1>
 
-    <!-- Flash messages -->
+    <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
@@ -35,11 +111,11 @@
       {% endif %}
     {% endwith %}
 
-    <!-- Main form -->
+    <!-- Form -->
     <form method="POST">
-      <label for="prompt_type">Select Prompt Type:</label>
-      <select name="prompt_type" id="prompt_type" required>
-        <option value="">-- Choose one --</option>
+      <label for="prompt_type">Prompt Type:</label>
+      <select name="prompt_type" required>
+        <option value="">-- Choose --</option>
         <option value="product_description" {% if form_data and form_data.prompt_type == 'product_description' %}selected{% endif %}>Product Description</option>
         <option value="social_media_post" {% if form_data and form_data.prompt_type == 'social_media_post' %}selected{% endif %}>Social Media Post</option>
         <option value="ad_copy" {% if form_data and form_data.prompt_type == 'ad_copy' %}selected{% endif %}>Ad Copy</option>
@@ -48,76 +124,76 @@
       </select>
 
       <label for="tone">Tone:</label>
-      <input type="text" id="tone" name="tone" placeholder="e.g., playful, professional" 
-             value="{{ form_data.tone if form_data else '' }}" required>
+      <input type="text" name="tone" placeholder="e.g., playful, professional" value="{{ form_data.tone if form_data else '' }}" required>
 
-      <label for="product">Product Name or Description:</label>
-      <input type="text" id="product" name="product" 
-             value="{{ form_data.product if form_data else '' }}" required>
+      <label for="product">Product Name/Description:</label>
+      <input type="text" name="product" value="{{ form_data.product if form_data else '' }}" required>
 
       <label for="audience">Target Audience:</label>
-      <input type="text" id="audience" name="audience" 
-             value="{{ form_data.audience if form_data else '' }}" required>
+      <input type="text" name="audience" value="{{ form_data.audience if form_data else '' }}" required>
 
       <label for="extra">Extra Info:</label>
-      <textarea id="extra" name="extra" placeholder="e.g., launch date, discount, features...">{{ form_data.extra if form_data else '' }}</textarea>
+      <textarea name="extra" placeholder="Optional">{{ form_data.extra if form_data else '' }}</textarea>
 
-      <label for="email">Email (optional - we'll send the results):</label>
-      <input type="email" id="email" name="email" 
-             value="{{ form_data.email if form_data else '' }}" placeholder="your@email.com">
+      <label for="email">Email (optional):</label>
+      <input type="email" name="email" value="{{ form_data.email if form_data else '' }}" placeholder="you@example.com">
 
       <button type="submit">Generate</button>
     </form>
 
     {% if result %}
-    <h2>Generated Copy:</h2>
-    <div class="output-box" id="resultText">{{ result }}</div>
-    <p><small>Generated in {{ time }} seconds</small></p>
+      <h2>Generated Copy:</h2>
+      <div class="output-box" id="resultText">{{ result }}</div>
 
-    {% if tokens %}
-    <div class="token-usage">
-      <strong>Token Usage:</strong><br>
-      Prompt tokens: {{ tokens.prompt_tokens }}<br>
-      Generated tokens: {{ tokens.generated_tokens }}<br>
-      Total tokens: {{ tokens.total_tokens }}
-    </div>
+      <p><small>Generated in {{ time }} seconds</small></p>
+
+      {% if token_usage.total_tokens > 0 %}
+        <div class="token-usage">
+          <strong>Token Usage:</strong><br>
+          Prompt: {{ token_usage.prompt_tokens }}<br>
+          Output: {{ token_usage.generation_tokens }}<br>
+          Total: {{ token_usage.total_tokens }}
+        </div>
+      {% endif %}
+
+      <!-- Share + Copy -->
+      <div class="share-buttons">
+        <a href="https://www.facebook.com/sharer/sharer.php?u=https://yourappdomain.com" target="_blank">
+          <button type="button">Facebook</button>
+        </a>
+        <a href="https://twitter.com/intent/tweet?text={{ result|urlencode }}" target="_blank">
+          <button type="button">Twitter</button>
+        </a>
+        <button type="button" onclick="copyToClipboard()">Copy for Instagram</button>
+      </div>
+
+      <!-- Download as PDF -->
+      <form action="/download" method="POST" style="margin-top: 10px;">
+        <input type="hidden" name="content" value="{{ result|e }}">
+        <button type="submit">Download PDF</button>
+      </form>
     {% endif %}
 
-    <!-- Share Buttons -->
-    <div class="share-buttons">
-      <!-- Facebook -->
-      <a href="https://www.facebook.com/sharer/sharer.php?u=https://yourappdomain.com" target="_blank">
-        <button type="button">Share on Facebook</button>
-      </a>
-
-      <!-- Twitter -->
-      <a href="https://twitter.com/intent/tweet?text={{ result|urlencode }}" target="_blank">
-        <button type="button">Share on Twitter</button>
-      </a>
-
-      <!-- Copy to Clipboard -->
-
-      <button type="button" onclick="copyToClipboard()">Copy for Instagram</button>
-    </div>
-
-    <!-- PDF Download -->
-    <form action="/download" method="POST" style="margin-top: 10px;">
-      <input type="hidden" name="content" value="{{ result|e }}">
-      <button type="submit">Download as PDF</button>
-    </form>
+    {% if saved_copies %}
+      <div class="dashboard">
+        <h3>Saved Copies</h3>
+        <ul>
+          {% for copy in saved_copies %}
+            <li><strong>{{ copy.prompt_type }}</strong> – {{ copy.result[:60] }}...</li>
+          {% endfor %}
+        </ul>
+      </div>
     {% endif %}
   </div>
 
-  
-
-  <!-- Copy-to-Clipboard Script  -->
+  <!-- Copy to Clipboard -->
   <script>
     function copyToClipboard() {
       const text = document.getElementById("resultText").innerText;
       navigator.clipboard.writeText(text).then(() => {
-        alert("Copied to clipboard. Paste into Instagram caption!");
+        alert("Copied to clipboard for Instagram!");
       });
     }
-  </script> 
+  </script>
 </body>
 </html>

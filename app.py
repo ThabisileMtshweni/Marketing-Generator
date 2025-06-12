@@ -41,6 +41,9 @@ co = cohere.Client(COHERE_API_KEY)
 with open("prompts.json") as f:
     prompt_templates = json.load(f)
 
+# In-memory store for dashboard
+saved_copies = []
+
 # Helper: Split text for wrapping
 def split_text(text, max_width, canvas_obj, font_name="Helvetica", font_size=12):
     words = text.split()
@@ -97,15 +100,13 @@ def index():
             )
             result = response.generations[0].text.strip()
 
-            # Get token usage safely
-            if response.meta and response.meta.tokens:
+            if hasattr(response, "meta") and response.meta and hasattr(response.meta, "tokens"):
                 token_usage = {
-                    "prompt_tokens": response.meta.tokens.prompt_tokens,
-                    "generation_tokens": response.meta.tokens.generated_tokens,
-                    "total_tokens": response.meta.tokens.total_tokens
+                    "prompt_tokens": getattr(response.meta.tokens, "prompt_tokens", 0),
+                    "generation_tokens": getattr(response.meta.tokens, "generated_tokens", 0),
+                    "total_tokens": getattr(response.meta.tokens, "total_tokens", 0)
                 }
 
-            # Send email
             if form_data["email"]:
                 try:
                     send_email(form_data["email"], form_data["prompt_type"], result)
@@ -123,10 +124,30 @@ def index():
             result=result,
             time=elapsed,
             token_usage=token_usage,
-            form_data=form_data
+            form_data=form_data,
+            saved_copies=saved_copies
         )
 
-    return render_template("index.html", result=None, form_data=None, token_usage=None)
+    return render_template("index.html", result=None, form_data=None, token_usage=None, saved_copies=saved_copies)
+
+# Route: Save copy to dashboard
+@app.route("/save_copy", methods=["POST"])
+def save_copy():
+    content = request.form.get("content")
+    prompt_type = request.form.get("prompt_type")
+    tone = request.form.get("tone")
+
+    if content and prompt_type:
+        saved_copies.append({
+            "content": content,
+            "prompt_type": prompt_type,
+            "tone": tone
+        })
+        flash("Copy saved to dashboard!", "success")
+    else:
+        flash("Missing data to save copy.", "danger")
+
+    return redirect("/")
 
 # Route: PDF Download
 @app.route("/download", methods=["POST"])
@@ -150,7 +171,7 @@ def download_pdf():
     for paragraph in content.split('\n'):
         lines = split_text(paragraph, max_width, pdf)
         for line in lines:
-            if y < 70:  # reserve space for footer
+            if y < 70:
                 pdf.drawText(text_object)
                 draw_header_footer(pdf, width, height, page_num)
                 pdf.showPage()
